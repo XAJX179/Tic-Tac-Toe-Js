@@ -1,6 +1,6 @@
 const Gameboard = (
   () => {
-    let boardData = new Array(9);
+    let boardData = ['', '', '', '', '', '', '', '', ''];
     let winner = '';
     let winPatterns = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 
@@ -76,14 +76,28 @@ const Game = (
     }
 
     function getUserInput() {
-      return prompt('Enter index of board array to place ' + currentPlayer.sign)
+      let input;
+      while (true) {
+        input = prompt('Enter index of board array to place ' + currentPlayer.sign)
+        if (isNaN(input) || input == '') {
+          continue;
+        } else if (!isEmptyIndex(input)) {
+          continue;
+        } else {
+          return input;
+        }
+      }
+    }
+
+    function isEmptyIndex(input) {
+      return Gameboard.getBoardData()[input] == ''
     }
 
     function checkWinAndDraw(player) {
       let boardData = Gameboard.getBoardData()
       let currentArr;
 
-      let draw = boardData.values().every((e) => { return e !== undefined })
+      let draw = boardData.every((e) => { return e !== '' })
       if (draw) {
         return Gameboard.setWinner('none');
       }
