@@ -24,7 +24,16 @@ const Gameboard = (
       return winPatterns;
     }
 
-    return { getBoardData, getWinner, setWinner, getWinPatterns, place }
+    function isEmptyIndex(input) {
+      return boardData[input] == ''
+    }
+
+    function reset() {
+      boardData = ['', '', '', '', '', '', '', '', ''];
+      winner = '';
+    }
+
+    return { getBoardData, getWinner, setWinner, getWinPatterns, place, isEmptyIndex, reset }
   }
 )();
 
@@ -35,83 +44,65 @@ function createPlayer(name, sign) {
 const Game = (
   () => {
     let currentPlayer;
+    let player1;
+    let player2;
 
     function start() {
-      let player1 = createPlayer('xajx', 'X')
-      let player2 = createPlayer('xplo', 'O')
+      player1 = createPlayer('xajx', 'X')
+      player2 = createPlayer('xplo', 'O')
       currentPlayer = player1;
-      game_loop(player1, player2)
     }
 
-    function game_loop(player1, player2) {
-
-      while (true) {
-        console.log('\n', Gameboard.getBoardData().slice(0, 3))
-        console.log(Gameboard.getBoardData().slice(3, 6))
-        console.log(Gameboard.getBoardData().slice(6, 9))
-
-        if (Gameboard.getWinner() == '') {
-          if (currentPlayer == player1) {
-            playTurn(player1);
-          }
-          else {
-            playTurn(player2);
-          }
-          checkWinAndDraw(currentPlayer);
-          changeCurrentPlayer(player1, player2);
-        } else {
-          if (Gameboard.getWinner() == 'none') {
-            declareDraw();
-          } else {
-            declareWinner()
-          }
-          return;
-        }
+    function play_game(input) {
+      playTurn(input)
+      let game_ended = isWinOrDraw();
+      if (game_ended) {
+        endGame();
+      } else {
+        changeCurrentPlayer();
       }
     }
 
-    function playTurn(player) {
-      index = getUserInput()
-      Gameboard.place(index, player.sign)
+    function playTurn(index) {
+      Gameboard.place(index, currentPlayer.sign)
+      Display.drawMark(index, currentPlayer.sign)
     }
 
-    function getUserInput() {
-      let input;
-      while (true) {
-        input = prompt('Enter index of board array to place ' + currentPlayer.sign)
-        if (isNaN(input) || input == '') {
-          continue;
-        } else if (!isEmptyIndex(input)) {
-          continue;
-        } else {
-          return input;
-        }
-      }
-    }
-
-    function isEmptyIndex(input) {
-      return Gameboard.getBoardData()[input] == ''
-    }
-
-    function checkWinAndDraw(player) {
+    function isWinOrDraw() {
       let boardData = Gameboard.getBoardData()
       let currentArr;
 
+      for (const winPatternArr of Gameboard.getWinPatterns()) {
+        currentArr = [boardData[winPatternArr[0]], boardData[winPatternArr[1]], boardData[winPatternArr[2]]];
+
+        let win = currentArr.every((e) => { return e == currentPlayer.sign })
+
+        if (win) {
+          Gameboard.setWinner(currentPlayer)
+          return true;
+        }
+      }
       let draw = boardData.every((e) => { return e !== '' })
       if (draw) {
-        return Gameboard.setWinner('none');
+        Gameboard.setWinner('none');
+        return true;
       }
-      Gameboard.getWinPatterns().forEach((winPatternArr) => {
-        currentArr = [boardData[winPatternArr[0]], boardData[winPatternArr[1]], boardData[winPatternArr[2]]];
-        win = currentArr.every((e) => { return e == player.sign })
-        if (win) {
-          return Gameboard.setWinner(player)
-        }
-      })
+      return false;
+    }
+
+    function endGame() {
+      if (Gameboard.getWinner() == 'none') {
+        declareDraw();
+      } else {
+        declareWinner();
+      }
+      Gameboard.reset();
+      Display.resetDisplay();
+      return;
     }
 
 
-    function changeCurrentPlayer(player1, player2) {
+    function changeCurrentPlayer() {
       if (currentPlayer == player1) {
         currentPlayer = player2
       } else {
@@ -126,9 +117,55 @@ const Game = (
       console.log("Draw / Tie")
     }
 
-    return { start }
+    return { start, play_game }
+  }
+)();
+
+const Display = (
+  () => {
+    let displayContainer = document.querySelector('.container')
+    displayContainer.addEventListener('click', (e) => {
+      handleInput(e.target)
+
+      console.log('\n', Gameboard.getBoardData().slice(0, 3))
+      console.log(Gameboard.getBoardData().slice(3, 6))
+      console.log(Gameboard.getBoardData().slice(6, 9))
+    })
+
+    function handleInput(elem) {
+      let input = elem.dataset.index
+      if (elem.dataset.index == undefined) {
+        input = elem.parentNode.dataset.index
+      }
+      if (isValidInput(input)) {
+        Game.play_game(input)
+      }
+    }
+
+    function isValidInput(input) {
+      if (isNaN(input) || input == '' || !Gameboard.isEmptyIndex(input)) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+    function drawMark(index, sign) {
+      let box = document.querySelector(`.box[data-index="${index}"]`);
+      let p = document.createElement('p')
+      p.textContent = sign
+      box.replaceChildren(p)
+    }
+
+    function resetDisplay() {
+      let boxes = document.querySelectorAll('.box')
+      boxes.forEach((e) => {
+        e.replaceChildren()
+      })
+    }
+
+    return { drawMark, resetDisplay }
   }
 )();
 
 Game.start()
-console.log(Gameboard.getBoardData())
