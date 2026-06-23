@@ -43,15 +43,9 @@ function createPlayer(name, sign) {
 
 const Game = (
   () => {
-    let currentPlayer;
-    let player1;
-    let player2;
-
-    function start() {
-      player1 = createPlayer('xajx', 'X')
-      player2 = createPlayer('xplo', 'O')
-      currentPlayer = player1;
-    }
+    let currentPlayer = '';
+    let player1 = '';
+    let player2 = '';
 
     function play_game(input) {
       playTurn(input)
@@ -96,11 +90,14 @@ const Game = (
       } else {
         declareWinner();
       }
-      Gameboard.reset();
-      Display.resetDisplay();
+      restartGame()
       return;
     }
 
+    function restartGame() {
+      Gameboard.reset();
+      Display.restartDisplay();
+    }
 
     function changeCurrentPlayer() {
       if (currentPlayer == player1) {
@@ -111,25 +108,71 @@ const Game = (
     }
 
     function declareWinner() {
+      Display.sendMessage(`${Gameboard.getWinner().name} won!`)
       console.log(`${Gameboard.getWinner().name} won!`)
     }
     function declareDraw() {
+      Display.sendMessage("Draw / Tie")
       console.log("Draw / Tie")
     }
 
-    return { start, play_game }
+    function setCurrentPlayer(player) {
+      currentPlayer = player
+    }
+    function setPlayer1(player) {
+      player1 = player
+    }
+    function getPlayer1() {
+      return player1
+    }
+    function setPlayer2(player) {
+      player2 = player
+    }
+    function getPlayer2() {
+      return player1
+    }
+
+    function reset() {
+      player1 = '';
+      player2 = '';
+      currentPlayer = '';
+    }
+
+    return { play_game, getPlayer1, getPlayer2, setPlayer1, setPlayer2, setCurrentPlayer, reset }
   }
 )();
 
 const Display = (
   () => {
+    let nameForm = document.querySelector('.name-form')
+    let startGameBtn = nameForm.elements["start-game"]
     let displayContainer = document.querySelector('.container')
+    let restartBtn = document.querySelector('.restart-btn')
+
+    startGameBtn.addEventListener('click', (e) => {
+      if (nameForm.elements["player1"].value == "" || nameForm.elements["player2"].value == "") {
+      } else {
+        e.preventDefault()
+        nameForm.style.display = 'none'
+        restartBtn.style.display = 'flex'
+        displayContainer.style.display = 'grid'
+        Game.setPlayer1(createPlayer(nameForm.elements["player1"].value, "X"))
+        Game.setPlayer2(createPlayer(nameForm.elements["player2"].value, "O"))
+        Game.setCurrentPlayer(Game.getPlayer1())
+      }
+    })
+
     displayContainer.addEventListener('click', (e) => {
       handleInput(e.target)
 
       console.log('\n', Gameboard.getBoardData().slice(0, 3))
       console.log(Gameboard.getBoardData().slice(3, 6))
       console.log(Gameboard.getBoardData().slice(6, 9))
+    })
+
+    restartBtn.addEventListener('click', (e) => {
+      e.preventDefault()
+      resetAll();
     })
 
     function handleInput(elem) {
@@ -157,15 +200,33 @@ const Display = (
       box.replaceChildren(p)
     }
 
-    function resetDisplay() {
+    function restartDisplay() {
       let boxes = document.querySelectorAll('.box')
       boxes.forEach((e) => {
         e.replaceChildren()
       })
     }
 
-    return { drawMark, resetDisplay }
+    function sendMessage(message) {
+      let messageDiv = document.querySelector(`.message`);
+      let p = document.createElement('p')
+      p.textContent = 'Last round: ' + message
+      messageDiv.replaceChildren(p)
+    }
+
+    function reset() {
+      restartDisplay()
+      nameForm.style.display = 'block'
+      restartBtn.style.display = 'none'
+      displayContainer.style.display = 'none'
+    }
+
+    function resetAll() {
+      Gameboard.reset()
+      reset()
+      Game.reset()
+    }
+
+    return { drawMark, restartDisplay, sendMessage }
   }
 )();
-
-Game.start()

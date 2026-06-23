@@ -9,6 +9,14 @@
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+
+  display: none;
+}
+
+.restart-btn {
+  display: none;
+  justify-content: center;
+  margin: 10px;
 }
 
 .box {
